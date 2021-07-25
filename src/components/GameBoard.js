@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import Cell from "./Cell";
 import { makeStyles, Button } from "@material-ui/core";
 
-import generateGameBoard from "../helpers/GenerateGameBoard";
+import { createGameTemplate, placeBombs } from "../helpers/GenerateGameBoard";
 
 const useStyles = makeStyles({
   game: {
@@ -35,11 +35,12 @@ const useStyles = makeStyles({
 
 export default function GameBoard(props) {
   const { bombs, height, width } = props.gameSettings;
-  const board = new generateGameBoard(height, width, bombs);
-  const validBoard = board.generateValidGameSession();
 
+  const [points, setPoints] = useState(0);
   const [timeLeft, setTimeLeft] = React.useState(99);
-  const [gameBoard, setGameBoard] = useState(validBoard);
+  const [gameBoard, setGameBoard] = useState(
+    createGameBoard(height, width, bombs)
+  );
   const [gameStatus, setGameStatus] = useState("PENDING");
 
   function getStatusEmoji() {
@@ -53,27 +54,118 @@ export default function GameBoard(props) {
     }
   }
 
-  function resetBoard() {
-    const board = new generateGameBoard(height, width, bombs);
-    const newBoard = board.generateValidGameSession();
-    setGameBoard(newBoard);
+  function createGameBoard(height, width, bombs) {
+    let board = createGameTemplate(height, width);
+    board = placeBombs(board, height, width, bombs);
+    return board;
   }
 
-  function reveal(x, y) {
-    let updated = gameBoard;
-    updated[x][y].isRevealed = true;
-    console.log(updated[x][y]);
-    setGameBoard(updated);
+  function allSurroundingCells(x, y, height, width) {
+    const board = gameBoard;
+    let surroundingCells = [];
+
+    if (x > 0) {
+      surroundingCells.push(board[x - 1][y]);
+    }
+
+    if (x < height - 1) {
+      surroundingCells.push(board[x + 1][y]);
+    }
+
+    if (y > 0) {
+      surroundingCells.push(board[x][y - 1]);
+    }
+
+    if (y < width - 1) {
+      surroundingCells.push(board[x][y + 1]);
+    }
+
+    if (x > 0 && y > 0) {
+      surroundingCells.push(board[x - 1][y - 1]);
+    }
+
+    if (x > 0 && y < width - 1) {
+      surroundingCells.push(board[x - 1][y + 1]);
+    }
+
+    if (x < height - 1 && y < width - 1) {
+      surroundingCells.push(board[x + 1][y + 1]);
+    }
+
+    if (x < height - 1 && y > 0) {
+      surroundingCells.push(board[x + 1][y - 1]);
+    }
+
+    return surroundingCells;
+  }
+
+  function resetBoard() {
+    setGameStatus("PENDING");
+    setGameBoard(createGameBoard(height, width, bombs));
+  }
+
+  function copyBoardState(currentState) {
+    return JSON.parse(JSON.stringify(currentState));
+  }
+
+  function revealCell(x, y) {
+    const copyBoard = copyBoardState(gameBoard);
+    if (!copyBoard[x][y].isRevealed) {
+      copyBoard[x][y].isRevealed = true;
+      updateGameBoard(copyBoard);
+    }
+  }
+
+  function revealBoard() {
+    const copyBoard = copyBoardState(gameBoard);
+    copyBoard.map((datarow) => {
+      datarow.map((cell) => {
+        cell.isRevealed = true;
+      });
+    });
+    updateGameBoard(copyBoard);
+  }
+
+  function flagCell(event, cellData) {
+    event.preventDefault();
+
+    const copyBoard = copyBoardState(gameBoard);
+    if (!copyBoard[cellData.x][cellData.y].isFlagged) {
+      copyBoard[cellData.x][cellData.y].isFlagged = true;
+      if (copyBoard[cellData.x][cellData.y].isBomb) {
+        const localScore = points + 1;
+        setPoints(localScore);
+      }
+      updateGameBoard(copyBoard);
+    } else {
+      unFlag(copyBoard[cellData.x][cellData.y]);
+    }
+  }
+
+  function unFlag(cellData) {
+    const copyBoard = copyBoardState(gameBoard);
+    if (copyBoard[cellData.x][cellData.y].isFlagged) {
+      copyBoard[cellData.x][cellData.y].isFlagged = false;
+      updateGameBoard(copyBoard);
+    }
   }
 
   function handeCellClick(cellData) {
+    if (gameStatus === "PENDING") {
+      setGameStatus("IN PROGRESS");
+    }
     if (!cellData.isRevealed) {
-      reveal(cellData.x, cellData.y);
+      revealCell(cellData.x, cellData.y);
     }
     if (cellData.isBomb) {
+      revealBoard();
       alert("Sorry you Lose");
       setGameStatus("LOST");
     }
+  }
+
+  function updateGameBoard(newState) {
+    setGameBoard(newState);
   }
 
   const styles = useStyles();
@@ -83,9 +175,7 @@ export default function GameBoard(props) {
       <div className="game-board-options"></div>
       <div className={styles["game-board-container"]}>
         <div className={styles["game-board-interface"]}>
-          <span className="game-board-mine-count">
-            {props.gameSettings.bombs}
-          </span>
+          <span className="game-board-mine-count">{bombs}</span>
           <Button
             className={styles["game-board-reset-button"]}
             onClick={() => {
@@ -98,10 +188,15 @@ export default function GameBoard(props) {
         </div>
         <div className={styles.game}>
           <div>
-            {validBoard.map((row, i) => (
+            {gameBoard.map((row, i) => (
               <div key={i} className={styles["game-board-row"]}>
                 {row.map((cell, j) => (
-                  <Cell key={j} cellData={cell} handleClick={handeCellClick} />
+                  <Cell
+                    key={j}
+                    cellData={cell}
+                    handleClick={handeCellClick}
+                    handleRightClick={flagCell}
+                  />
                 ))}
               </div>
             ))}

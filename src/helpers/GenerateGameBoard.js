@@ -1,51 +1,43 @@
-function generateGameBoard(height, width, bombs) {
-  this.height = height;
-  this.width = width;
-  this.bombs = bombs;
+function createGameTemplate(height, width) {
+  let board = [];
 
-  this.createGameTemplate = function () {
-    let board = [];
-
-    for (let i = 0; i < this.height; i++) {
-      let nestedColum = [];
-      for (let j = 0; j < this.width; j++) {
-        nestedColum.push({
-          x: j,
-          y: i,
-          isBomb: false,
-          neighbour: 0,
-          isRevealed: false,
-          isEmpty: false,
-          isFlagged: false,
-        });
-      }
-      board.push(nestedColum);
+  for (let i = 0; i < height; i++) {
+    let nestedColum = [];
+    for (let j = 0; j < width; j++) {
+      nestedColum.push({
+        x: i,
+        y: j,
+        isBomb: false,
+        neighbour: 0,
+        isRevealed: false,
+        isEmpty: false,
+        isFlagged: false,
+      });
     }
-    return board;
-  };
-
-  this.placeBombs = function () {
-    let gameboard = this.createGameTemplate(this.height, this.width);
-    let bombsLeft = this.bombs;
-    while (bombsLeft > 0) {
-      const randomx = this.randomNumber(this.height);
-      const randomy = this.randomNumber(this.width);
-      if (!gameboard[randomx][randomy].isBomb) {
-        gameboard[randomx][randomy].isBomb = true;
-        bombsLeft--;
-      }
-    }
-    return gameboard;
-  };
-
-  this.randomNumber = function (upperLimit) {
-    return Math.floor(Math.random() * upperLimit);
-  };
-
-  this.generateValidGameSession = function (height, width, bombs) {
-    const bombBoard = this.placeBombs();
-    return bombBoard;
+    board.push(nestedColum);
   }
-}
+  return board;
+};
 
-export default generateGameBoard;
+function placeBombs (board, height, width, bombs) {
+  let bombsLeft = bombs;
+  while (bombsLeft > 0) {
+    const randomx = randomNumber(height);
+    const randomy = randomNumber(width);
+    if (!board[randomx][randomy].isBomb) {
+      board[randomx][randomy].isBomb = true;
+      bombsLeft--;
+    }
+  }
+  return board;
+};
+
+function randomNumber (upperLimit) {
+  return Math.floor(Math.random() * upperLimit);
+};
+
+
+export {
+  createGameTemplate,
+  placeBombs,
+}

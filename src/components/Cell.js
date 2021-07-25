@@ -20,23 +20,28 @@ const useStyles = makeStyles({
 
 export default function Cell(props) {
   function getCellContent(cellData) {
-    if (!cellData.isRevealed) {
-      return cellData.isFlagged ? "🚩" : null;
+    if (cellData.isFlagged) {
+      return "🚩";
     }
-    if (cellData.isBomb) {
+    if (cellData.isRevealed && cellData.isBomb) {
       return "💣";
+    }
+    if (cellData.isRevealed && !cellData.isFlagged) {
+      return "X";
     }
     if (cellData.neighbour === 0) {
       return null;
     }
     return cellData.neighbour;
   }
+  
   const styles = useStyles();
 
   return (
     <div
       className={styles.cell}
       onClick={() => props.handleClick(props.cellData)}
+      onContextMenu={(event) => props.handleRightClick(event, props.cellData)}
     >
       {getCellContent(props.cellData)}
     </div>
