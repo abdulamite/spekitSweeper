@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import Cell from "./Cell";
 import { makeStyles, Button } from "@material-ui/core";
 
-import { createGameTemplate, placeBombs } from "../helpers/GenerateGameBoard";
+import { createGameTemplate, placeBombs } from "../helpers/GameHelpers";
 
 const useStyles = makeStyles({
   game: {
@@ -31,17 +31,46 @@ const useStyles = makeStyles({
   "game-board-reset-button": {
     background: "#055052",
   },
+  "game-status": {
+    textAlign: "center",
+  },
 });
 
 export default function GameBoard(props) {
   const { bombs, height, width } = props.gameSettings;
 
-  const [points, setPoints] = useState(0);
-  const [timeLeft, setTimeLeft] = React.useState(99);
+  const [timeLeft, setTimeLeft] = useState(99);
   const [gameBoard, setGameBoard] = useState(
     createGameBoard(height, width, bombs)
   );
+  const [bombsLeft, setBombsLeft] = useState(bombs);
   const [gameStatus, setGameStatus] = useState("PENDING");
+  const [flaggedCells, setFlaggedCells] = useState([]);
+
+  useEffect(() => {
+    if (gameStatus === "IN PROGRESS") {
+      const intervalId = setInterval(() => {
+        setTimeLeft(timeLeft - 1);
+        if (timeLeft <= 0) {
+          setGameStatus("LOST");
+          alert("Sorry you Lose");
+        }
+      }, 1000);
+
+      return () => clearInterval(intervalId);
+    }
+  }, [gameStatus, timeLeft]);
+
+  useEffect(() => {
+    const bombFlaggedCells = flaggedCells.filter((cell) => {
+      return cell.isBomb;
+    });
+
+    if (bombFlaggedCells.length === 10) {
+      setGameStatus("WON");
+      alert("You Win");
+    }
+  }, [flaggedCells, bombsLeft]);
 
   function getStatusEmoji() {
     switch (gameStatus) {
@@ -49,6 +78,8 @@ export default function GameBoard(props) {
         return "🙂";
       case "LOST":
         return "😭";
+      case "WON":
+        return "🥰";
       default:
         return "🙂";
     }
@@ -100,6 +131,9 @@ export default function GameBoard(props) {
   }
 
   function resetBoard() {
+    setBombsLeft(10);
+    setFlaggedCells([]);
+    setTimeLeft(99);
     setGameStatus("PENDING");
     setGameBoard(createGameBoard(height, width, bombs));
   }
@@ -110,8 +144,11 @@ export default function GameBoard(props) {
 
   function revealCell(x, y) {
     const copyBoard = copyBoardState(gameBoard);
+    const surroundingCells = allSurroundingCells(x, y, height, width);
+    const bombCells = allSurroundingCellsWithBombs(surroundingCells);
     if (!copyBoard[x][y].isRevealed) {
       copyBoard[x][y].isRevealed = true;
+      copyBoard[x][y].bombsInProximity = bombCells.length;
       updateGameBoard(copyBoard);
     }
   }
@@ -132,10 +169,10 @@ export default function GameBoard(props) {
     const copyBoard = copyBoardState(gameBoard);
     if (!copyBoard[cellData.x][cellData.y].isFlagged) {
       copyBoard[cellData.x][cellData.y].isFlagged = true;
-      if (copyBoard[cellData.x][cellData.y].isBomb) {
-        const localScore = points + 1;
-        setPoints(localScore);
-      }
+      setFlaggedCells((flaggedCells) => [
+        ...flaggedCells,
+        copyBoard[cellData.x][cellData.y],
+      ]);
       updateGameBoard(copyBoard);
     } else {
       unFlag(copyBoard[cellData.x][cellData.y]);
@@ -148,6 +185,12 @@ export default function GameBoard(props) {
       copyBoard[cellData.x][cellData.y].isFlagged = false;
       updateGameBoard(copyBoard);
     }
+  }
+
+  function allSurroundingCellsWithBombs(cells) {
+    return cells.filter((cell) => {
+      return cell.isBomb;
+    });
   }
 
   function handeCellClick(cellData) {
@@ -172,10 +215,11 @@ export default function GameBoard(props) {
 
   return (
     <div>
+      <div className={styles["game-status"]}>{gameStatus}</div>
       <div className="game-board-options"></div>
       <div className={styles["game-board-container"]}>
         <div className={styles["game-board-interface"]}>
-          <span className="game-board-mine-count">{bombs}</span>
+          <span className="game-board-mine-count">{bombsLeft}</span>
           <Button
             className={styles["game-board-reset-button"]}
             onClick={() => {

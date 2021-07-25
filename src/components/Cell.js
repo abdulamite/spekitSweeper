@@ -4,7 +4,7 @@ import { makeStyles } from "@material-ui/core";
 const useStyles = makeStyles({
   cell: {
     display: "inline-block",
-    background: "#FCFAF9",
+    background: cellData => cellData.isRevealed ? "#53B8BB" : "#FCFAF9",
     border: 0,
     borderRadius: 2,
     height: "45px",
@@ -13,7 +13,7 @@ const useStyles = makeStyles({
     "line-height": "45px",
     cursor: "pointer",
     "text-align": "center",
-    color: "#333333",
+    color: cellData => cellData.isRevealed ? "#FAFAFA" : "#FCFAF9",
     "font-weight": "bold",
   },
 });
@@ -26,6 +26,9 @@ export default function Cell(props) {
     if (cellData.isRevealed && cellData.isBomb) {
       return "💣";
     }
+    if (cellData.isRevealed && !cellData.isFlagged && cellData.bombsInProximity) {
+      return cellData.bombsInProximity;
+    }
     if (cellData.isRevealed && !cellData.isFlagged) {
       return "X";
     }
@@ -35,7 +38,8 @@ export default function Cell(props) {
     return cellData.neighbour;
   }
   
-  const styles = useStyles();
+  const styles = useStyles(props.cellData);
+  console.log(styles);
 
   return (
     <div
