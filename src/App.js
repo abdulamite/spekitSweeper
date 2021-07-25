@@ -1,25 +1,29 @@
-import logo from './logo.svg';
-import './App.css';
+import React from "react";
+import GameBoard from "./components/GameBoard";
+import Rules from "./components/Rules";
+import "./App.css";
 
-function App() {
+import { makeStyles } from "@material-ui/core";
+
+const useStyles = makeStyles({
+  "game-title": {
+    margin: "0 auto",
+    textAlign: "center",
+  },
+});
+
+export default function App() {
+  const board = { height: 9, width: 9, bombs: 10 };
+  const styles = useStyles();
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+    <div className="main-container">
+      <div className={styles["game-title"]}>
+        <h1>SpekitSweeper</h1>
+      </div>
+      <div className="game-board">
+        <GameBoard gameSettings={board} />
+      </div>
+      <Rules />
     </div>
   );
 }
-
-export default App;
