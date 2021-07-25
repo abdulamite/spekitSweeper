@@ -30,16 +30,11 @@ export default function Cell(props) {
       return cellData.bombsInProximity;
     }
     if (cellData.isRevealed && !cellData.isFlagged) {
-      return "X";
-    }
-    if (cellData.neighbour === 0) {
       return null;
     }
-    return cellData.neighbour;
   }
   
   const styles = useStyles(props.cellData);
-  console.log(styles);
 
   return (
     <div
